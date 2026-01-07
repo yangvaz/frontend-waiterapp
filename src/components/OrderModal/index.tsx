@@ -13,7 +13,9 @@ interface OrderModalProps {
 
 export function OrderModal ({visible, order, onClose}: OrderModalProps) {
   useEffect(() => {
-    function handleKeyDown (event: KeyboardEvent) {
+    if (!visible) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         console.log('escape activated')
         onClose();
@@ -25,7 +27,8 @@ export function OrderModal ({visible, order, onClose}: OrderModalProps) {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [onClose]);
+
+  }, [visible, onClose]);
 
   if (!visible || !order) {
     return null;
@@ -35,14 +38,28 @@ export function OrderModal ({visible, order, onClose}: OrderModalProps) {
     return total + (product.price * quantity);
   }, 0);
 
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001';
+
+  const handleOverlayClick: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+
   return (
-    <Overlay>
+    <Overlay
+      onClick={handleOverlayClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="order-modal-title"
+    >
       <ModalBody>
         <header>
-          <strong>Mesa {order.table}</strong>
+          <strong id="order-modal-title">Mesa {order.table}</strong>
 
-          <button type="button" onClick={onClose}>
-            <img src={closeIcon} alt="icone para fechar modal" />
+          <button type="button" onClick={onClose} aria-label="Fechar modal">
+            <img src={closeIcon} alt="" />
           </button>
         </header>
 
@@ -69,7 +86,7 @@ export function OrderModal ({visible, order, onClose}: OrderModalProps) {
             {order.products.map(({_id, product, quantity}) => (
             <div className="item" key={_id}>
               <img
-                src={`http://localhost:3001/uploads/${product.imagePath}`}
+                src={`${BASE_URL}/uploads/${product.imagePath}`}
                 alt={product.name}
                 width="56"
                 height="28.51"
@@ -93,7 +110,11 @@ export function OrderModal ({visible, order, onClose}: OrderModalProps) {
         </OrderDetails>
 
         <Actions>
-          <button type="button" className="primary">
+          <button
+            type="button"
+            className="primary"
+            disabled={order.status === 'DONE'}
+          >
             <span>🧑‍🍳</span>
             <strong>Iniciar produção</strong>
           </button>
